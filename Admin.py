@@ -7,6 +7,22 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QLin
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt
 
+# Load pre-trained Haar Cascade for face detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+# Define a simple emotion classifier (you can replace this with a more advanced model)
+emotion_dict = {0: "Happy", 1: "Sad", 2: "Neutral", 3: "Frustrated"}
+def classify_emotion(face_image):
+    # Dummy emotion classifier using pixel intensity mean (for demo purposes)
+    mean_intensity = face_image.mean()
+    if mean_intensity > 180:
+        return "Happy"
+    elif mean_intensity < 80:
+        return "Sad"
+    elif mean_intensity < 120:
+        return "Frustrated"
+    else:
+        return "Neutral"
 
 class AdminApp(QMainWindow):
     def __init__(self):
@@ -67,6 +83,16 @@ class AdminApp(QMainWindow):
                     # Decode the frame
                     np_frame = np.frombuffer(frame_data, dtype=np.uint8)
                     frame = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
+
+                    # Face detection and emotion recognition
+                    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+                    for (x, y, w, h) in faces:
+                        face_roi = gray_frame[y:y+h, x:x+w]
+                        emotion = classify_emotion(face_roi)
+                        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+                        cv2.putText(frame, emotion, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
                     # Convert the frame to QImage and display it
                     height, width, channel = frame.shape
